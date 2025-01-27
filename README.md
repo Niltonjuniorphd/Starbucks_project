@@ -233,6 +233,11 @@ port_id = {
 
 transcript_collection['ofr_id_short'] = transcript_collection['offer_id'].map(port_id)
 transcript_collection = transcript_collection.drop(['offer_id'], axis=1)
+
+# create a new column that contains the number of channels
+transcript_collection['channels_count'] = transcript_collection['channels'].apply(lambda x: len(x))
+
+
 ```
 
 ---
@@ -291,6 +296,7 @@ dtypes: datetime64[ns](1), float64(3), int64(5), object(7)
 memory usage: 20.5+ MB
 ```
 
-- Drop the column `amount` 
+- Drop the column `amount`
+- The column `reward` has (134002) missing values because the `event` associated to it is only the `offer_completed`.
 - The column `gender` has (18776) missing values and and three categories: `F`, `M`, `O`.
-- The column `income` has (18776) missing values, the same as the column `gender`. Two strategy: will be adopted: 1- drop the data and 2- modeling and predict the missing values.
+- The column `income` has (18776) missing values, the same as the column `gender`. (Two strategy will be adopted: 1- drop the data and 2- modeling and predict the missing values)
