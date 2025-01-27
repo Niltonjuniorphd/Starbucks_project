@@ -41,12 +41,12 @@ X = pd.concat([X, X_encoded], axis=1).drop(columns=X.select_dtypes(include=['obj
 
 model1 = RandomForestClassifier(
     random_state=42,
-    #max_depth=20,
-    #n_estimators=200,
-    #min_samples_leaf=2,
-    #min_samples_split=4,
-    #max_features=0.5,
-    #min_impurity_decrease=0.000001,
+    max_depth=15,
+    n_estimators=100,
+    min_samples_leaf=2,
+    min_samples_split=10,
+    max_features=0.5,
+    min_impurity_decrease=0.000001,
     n_jobs=-1,
     #class_weight='balanced'
     )
@@ -91,12 +91,14 @@ pd.DataFrame(result).round(2)
 # 'min_samples_leaf': [1, 3]
 
 param_grid = {
-'n_estimators': [25, 50],        
-'max_depth': [50],       
-'min_samples_split': [2, 5],
-'min_samples_leaf': [1, 3]
+'n_estimators': [50, 100, 200],        
+'max_depth': [None, 20, 50],       
+'min_samples_split': [2, 5, 10],
+'min_samples_leaf': [1, 4],
+'max_samples': [ None, 0.5, 0.7]
+#'max_features': ['sqrt', 'log2'],
 }
 
 
-tunning_model_rf(X, y, 'f1', param_grid=param_grid)
+tunning_model_rf(X, y, 'f1_macro', param_grid=param_grid, cv=5)
 # %%
