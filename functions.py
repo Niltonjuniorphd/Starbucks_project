@@ -15,8 +15,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder
 
-
-
+from scipy.stats import ks_2samp
 
 def train_model(X, y, model_type, fig='no'):
 
@@ -228,3 +227,22 @@ def feature_selection(X, y, model=RandomForestClassifier(random_state=42), res=0
     print(f"\nSelected Features: {selected_features}")
 
     return selected_features
+
+def ks_test(df1, df2, sig=0.05):
+    # Generate random examples (replace with your actual data)
+
+    # Kolmogorov-Smirnov test
+    statistic, p_value = ks_2samp(df1, df2)
+
+    # Display results
+    print(f"KS Statistic: {statistic}")
+    print(f"p-value: {p_value}")
+
+    # Evaluation of the result
+    alpha = sig
+    if p_value < alpha:
+        print("We reject the null hypothesis: the distributions are different.")
+    else:
+        print("We do not reject the null hypothesis: the distributions are the same.")
+    
+    return statistic, p_value

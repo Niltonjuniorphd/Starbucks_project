@@ -123,7 +123,7 @@ importance_df["Cumulative"] = importance_df["Importance"].cumsum()
 
 # Configuração do Random Forest com validação cruzada (GridSearchCV)
 param_grid = {
-    'n_estimators': [100, 200, 300],
+    'n_estimators': [50, 200, 300],
     'max_depth': [None, 20, 50],
     #'min_samples_split': [2, 5],
     #'min_samples_leaf': [1, 2],
@@ -139,7 +139,7 @@ param_grid_b = {
 }
 
 rf = RandomForestClassifier(random_state=42)
-grid_search = GridSearchCV(rf, param_grid_b, cv=5, scoring='accuracy', n_jobs=-1, verbose=1)
+grid_search = GridSearchCV(rf, param_grid, cv=3, scoring='accuracy', n_jobs=-1, verbose=1)
 grid_search.fit(X_train_scal, y_train)
 
 # Melhor modelo
@@ -147,15 +147,12 @@ best_rf = grid_search.best_estimator_
 
 # Avaliar no conjunto de teste
 y_pred_test = best_rf.predict(X_test_scal)
+y_pred_train = best_rf.predict(X_train_scal)
+
 print("Classification Report:")
 print(classification_report(y_test, y_pred_test))
-print("Confusion Matrix:")
-print(confusion_matrix(y_test, y_pred_test))
 
-y_pred_train = best_rf.predict(X_train_scal)
 print("Classification Report:")
 print(classification_report(y_train, y_pred_train))
-print("Confusion Matrix:")
-print(confusion_matrix(y_test, y_pred_train))
 
 # %%
