@@ -1,6 +1,8 @@
 # Starbucks_project
 
-Apply Data Science and Machine Learning in Python to analyze Starbucks customers' behavior and predict which customers will respond to an offer.
+Apply Data Science and Machine Learning techniques to analyze Starbucks customers' behavior and predict which customers will respond to an offer.
+
+
 
 # Project Description
 There are EDA, clustering and machine learning techniques applyed to analyze a dataset containing simulated data about customers of a coffee shop chain.
