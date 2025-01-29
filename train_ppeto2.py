@@ -13,25 +13,17 @@ from sklearn.preprocessing import OneHotEncoder
 # Excluímos colunas irrelevantes e garantimos que o target seja 'gender'.
 
 #%%
-df0 = pd.read_csv('transcript_b.csv', index_col=0)
+df0 = pd.read_csv('person_summary_profile.csv', index_col=0)
 df0
 
 df_unknown = df0[df0['gender'].isna()] #unknown gender to be predicted
 
 #df = df0.dropna().drop_duplicates().copy()
-df = df0.replace(np.inf, np.nan).dropna(axis=0).drop_duplicates().copy() #.fillna(0)
+df = df0.dropna(axis=0).drop_duplicates().copy() #.fillna(0)
 df = df[df['gender'] != 'O']
 
 
-X = df[[
- 'event',
- 'offer_id',
- 'income',
- 'offer_type',
- 'age_group'
-  ]] 
-
-
+X = df.drop(['person','gender'], axis=1)
 y = df['gender']
 
 label_encoder = LabelEncoder()
@@ -43,8 +35,8 @@ y = label_encoder.fit_transform(y)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
 encoder = OneHotEncoder(sparse_output=False)
-X_train_encoded = encoder.fit_transform(X_train)
-X_test_encoded = encoder.transform(X_test)
+X_train_encoded = encoder.fit_transform(X_train.select_dtypes('object'))
+X_test_encoded = encoder.transform(X_test.select_dtypes('object'))
 
 scaler = StandardScaler()
 X_train_scal = scaler.fit_transform(X_train_encoded)
@@ -52,11 +44,11 @@ X_test_scal = scaler.transform(X_test_encoded)
 
 # Configuração do Random Forest com validação cruzada (GridSearchCV)
 param_grid = {
-    'n_estimators': [100, 300],
-    'max_depth': [None, 10, 30],
-    'min_samples_split': [2, 5],
+    'n_estimators': [100, 200, 300],
+    'max_depth': [None, 20, 50],
+    #'min_samples_split': [2, 5],
     #'min_samples_leaf': [1, 2],
-    #'max_features': ['sqrt', 'log2']
+    'max_features': ['sqrt', 'log2']
 }
 
 rf = RandomForestClassifier(random_state=42)
