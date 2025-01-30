@@ -196,38 +196,6 @@ def model_baseline(X, y):
     return model_baseline_metrics
 
 
-
-
-
-def feature_selection(X, y, model=RandomForestClassifier(random_state=42), res=0.95):
-
-    rf_model = model
-    
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-    rf_model.fit(X_train, y_train)
-
-    feature_importances = model.feature_importances_
-    # Criar um dataframe para visualizar as importâncias
-    importance_df = pd.DataFrame({
-        "Feature": X.columns,
-        "Importance": feature_importances
-    })
-    # Ordenar as features pela importância
-    importance_df = importance_df.sort_values(by="Importance", ascending=False)
-    print(importance_df)
-
-    importance_df = importance_df.sort_values(by="Importance", ascending=False)
-
-    # Calcular a importância acumulada
-    importance_df["Cumulative"] = importance_df["Importance"].cumsum()
-
-    # Selecionar features com importância acumulada até 95%
-    selected_features = importance_df[importance_df["Cumulative"] <= res]["Feature"].tolist()
-    print(f"\nSelected Features: {selected_features}")
-
-    return selected_features
-
 def ks_test(df1, df2, sig=0.05):
     # Generate random examples (replace with your actual data)
 
@@ -246,3 +214,50 @@ def ks_test(df1, df2, sig=0.05):
         print("We do not reject the null hypothesis: the distributions are the same.")
     
     return statistic, p_value
+
+def print_metrics(model, X_train, y_train, y_test, y_pred_train, y_pred_test):
+
+    print('-----Training Model------')
+
+    print('\nBaseline Metrics\n')
+    print('Train\n')
+    print(classification_report(y_train, y_pred_train, target_names=model.named_steps['classifier'].classes_, zero_division=1))
+    print('Test\n')
+    print(classification_report(y_test, y_pred_test, target_names=model.named_steps['classifier'].classes_, zero_division=1))
+
+    print('Confusion Matrix Train\n')
+    cm2 = confusion_matrix(y_train, y_pred_train)
+    disp1 = ConfusionMatrixDisplay(
+                confusion_matrix=cm2, display_labels=model.named_steps['classifier'].classes_)
+    disp1.plot(cmap="Blues")
+    plt.show()
+
+    print('Confusion Matrix Test\n')
+    cm1 = confusion_matrix(y_test, y_pred_test)
+    disp1 = ConfusionMatrixDisplay(
+                confusion_matrix=cm1, display_labels=model.named_steps['classifier'].classes_, )
+    disp1.plot(cmap="Blues")
+    plt.show()
+
+
+def feature_importance(model):   
+
+    feature_importances = model.named_steps['classifier'].feature_importances_
+    importance_df = pd.DataFrame({
+    "Feature": model.named_steps['preprocessor'].get_feature_names_out(),
+    "Importance": feature_importances}).sort_values(by="Importance", ascending=True).reset_index(drop=True)
+
+    importance_df["Cumulative"] = importance_df["Importance"].cumsum()
+
+    plt.figure(figsize=(4, 9))
+    plt.barh(importance_df["Feature"], importance_df["Importance"])
+    plt.xlabel("Importance")
+    plt.ylabel("Feature")
+    plt.title("Feature Importance")
+    plt.show()
+
+    print(importance_df['Feature'].tolist()[::-1])
+
+    feature_selection = importance_df['Feature'].loc[(importance_df['Cumulative'] >=0.8)][::-1].tolist()
+
+    return feature_selection

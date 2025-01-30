@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 # Excluímos colunas irrelevantes e garantimos que o target seja 'gender'.
 
 #%%
-df0 = pd.read_csv('person_activity_profile.csv', index_col=0)
+df0 = pd.read_csv('events_offer.csv', index_col=0)
 df0
 
 df_unknown = df0[df0['gender'].isna()] #unknown gender to be predicted
@@ -31,12 +31,13 @@ y = df['ofr_id_short']
 label_encoder = LabelEncoder()
 y = label_encoder.fit_transform(y)
 
+#%%
+
 #smote = SMOTE(random_state=42)
 #X_balanced, y_balanced = smote.fit_resample(X.select_dtypes('number'), y)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
-#%%
 encoder = OneHotEncoder(sparse_output=False, categories='auto', drop='first')
 X_train_enc = encoder.fit_transform(X_train.select_dtypes(include=['object']))
 X_test_enc = encoder.transform(X_test.select_dtypes(include=['object']))
