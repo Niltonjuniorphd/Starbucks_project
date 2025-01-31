@@ -16,37 +16,30 @@ from functions import print_metrics, feature_importance
 #%%
 df0 = pd.read_csv('person_activity_profile.csv', index_col=0)
 
+df_gender_unknow = df0[df0['gender'].isna()]
+
 df0 = df0.dropna()
 
-df0_train, df_valid = train_test_split(df0, test_size=0.1, random_state=42, stratify=df0['gender'])
+df, df_valid = train_test_split(df0, test_size=0.1, random_state=42, stratify=df0['gender'])
 
-y_valid = df_valid['gender']
+# y_valid = df_valid['gender']
+# df_valid = df_valid.drop(columns=['gender'])
 
-# df0 = df0[~df0['ofr_id_short'].isin(['ofr_C', 'ofr_H'])]
+X = df.drop(columns=['person', 'gender', 'became_member_on', 'bec_memb_year_month', 'channels']).drop_duplicates().dropna()
+y = df['gender']
 
-# df_gen_unknown = df0[(df0['gender'].isna())] #unknown gender to be predicted
 
-# df_gender_O = df0[df0['gender'] == 'O'] # gender 'O' to be predicted
-
-# df_no_tran = df0[df0['cnt_transaction'] == 0]  
-
-# df = df0[(df0['gender'] != 'O') & (df0['cnt_transaction'] != 0)].dropna(axis=0)
-
-#df = df0.drop(columns=['person', 'became_member_on', 'bec_memb_year_month']).drop_duplicates().dropna()
-
-df = df0_train[[
-    'gender',
-    'tran_amoun_mean',
-    'income',
-    'avg_time_transaction',
-    ]].dropna()
+X = X[[
+'tran_amoun_mean',
+'income',
+'age'
+    ]]
 
 #%%
 
 print('-----Training Model------')
 
-X = df.drop(['gender'], axis=1)
-y = df['gender']
+
 
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
@@ -112,11 +105,6 @@ pd.DataFrame(grid_search.best_params_.values(), index=[*grid_search.best_params_
 
 
 #%%
-
-# Save the best model
-
-#%%
-
 # Save the best model
 joblib.dump(grid_search.best_estimator_, f'best_model_gender_{model.named_steps['classifier'].__class__.__name__}.pkl')
 
@@ -125,11 +113,28 @@ loaded_model = joblib.load(f'best_model_gender_{model.named_steps['classifier'].
 
 # Use the model for prediction (assuming X_test is defined)
 predictions = loaded_model.predict(X_test)
+predictions
 
 # %%
 
-no_tran_predicted = loaded_model.predict(df_valid)
-no_tran_predicted = pd.Series(no_tran_predicted, name='gender_predicted', index=df_valid.index)
-recommendatios = pd.concat([df_valid[['person', 'ofr_id_short', 'gender']], no_tran_predicted], axis=1)
-recommendatios
+valid_predicted = loaded_model.predict(df_valid)
+valid_predicted = pd.Series(valid_predicted, name='gender_predicted', index=df_valid.index)
+valid_table = pd.concat([df_valid[['person', 'ofr_id_short', 'gender']], valid_predicted], axis=1)
+valid_table
+
+y_pred_test_proba = best_model.predict_proba(df_valid)
+proba_df = pd.DataFrame(y_pred_test_proba, columns=best_model.classes_, index=df_valid.index)
+proba_df
+
 # %%
+
+# def get_recommendations(proba_df):  
+#     recommendations = []
+#     for index, row in proba_df.iterrows():
+#         #print(row)
+#         top_3_indices = row.nlargest(3).index.tolist()
+#         recommendations.append(top_3_indices)
+#     return recommendations
+
+# recomendations = get_recommendations(proba_df)
+# recomendations

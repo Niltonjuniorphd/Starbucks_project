@@ -16,40 +16,35 @@ from functions import print_metrics, feature_importance
 #%%
 df0 = pd.read_csv('person_activity_profile.csv', index_col=0)
 
+df_gender_unknow = df0[df0['gender'].isna()]
+
 df0 = df0.dropna()
 
-df0_train, df_valid = train_test_split(df0, test_size=0.1, random_state=42, stratify=df0['ofr_id_short'])
+df, df_valid = train_test_split(df0, test_size=0.1, random_state=42, stratify=df0['gender'])
 
-y_valid = df_valid['ofr_id_short']
+# y_valid = df_valid['gender']
+# df_valid = df_valid.drop(columns=['gender'])
 
-# df0 = df0[~df0['ofr_id_short'].isin(['ofr_C', 'ofr_H'])]
+X = df.drop(columns=['person',
+'ofr_id_short',
+'became_member_on',
+'bec_memb_year_month',
+'channels',
+'duration',
+'reward',
+'difficulty',
+'offer_type']) #.drop_duplicates().dropna()
 
-# df_gen_unknown = df0[(df0['gender'].isna())] #unknown gender to be predicted
+y = df['ofr_id_short']
 
-# df_gender_O = df0[df0['gender'] == 'O'] # gender 'O' to be predicted
-
-# df_no_tran = df0[df0['cnt_transaction'] == 0]  
-
-# df = df0[(df0['gender'] != 'O') & (df0['cnt_transaction'] != 0)].dropna(axis=0)
-
-df = df0_train.drop(columns=['person', 'became_member_on', 'bec_memb_year_month']).drop_duplicates().dropna()
-
-# df = df[[
-# 'ofr_id_short',
-# 'reward_offer_completed',
-# 'curiosity_vr',
-# 'age',
-# 'tran_amoun_tot',
-# 'avg_time_transaction'
-# ]]
+X = X[[
+'reward_offer_completed', 'curiosity_vr', 'overall_cr'
+    ]]
 
 
 #%%
-print('-----Training Model------')
+print('-----Training Base Line Model------')
 
-X = df.drop(['ofr_id_short'], axis=1)
-# y = pd.get_dummies(df['ofr_id_short'], dtype=int).iloc[:,0]
-y = df['ofr_id_short']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
@@ -83,12 +78,12 @@ print('-----Tunning Model------')
 param_grid_dt = {
     'classifier__criterion': ['gini', 'entropy'], 
     'classifier__max_depth': [None, 50, 100],
-    # 'classifier__min_samples_split': [2],
+    'classifier__min_samples_split': [2, 4],
     # 'classifier__min_samples_leaf': [1],
     'classifier__max_features': [None, 'sqrt', 'log2'],
     'classifier__class_weight': ['balanced', None],
     'classifier__splitter': ['best', 'random'],
-    'classifier__min_impurity_decrease': [0.0, 0.01]
+    # 'classifier__min_impurity_decrease': [0.0, 0.01]
 }
 param_grid_rf = {
     'classifier__n_estimators': [100, 300],  # Number of trees in the forest
@@ -126,8 +121,6 @@ pd.DataFrame(grid_search.best_params_.values(), index=[*grid_search.best_params_
 
 
 
-
-
 #%%
 
 # Save the best model
@@ -136,7 +129,7 @@ joblib.dump(grid_search.best_estimator_, f'best_model_offer_{model.named_steps['
 # Load the saved model
 loaded_model = joblib.load(f'best_model_offer_{model.named_steps['classifier'].__class__.__name__}.pkl')
 
-# Use the model for prediction (assuming X_test is defined)
+# Use the model for prediction 
 predictions = loaded_model.predict(X_test)
 
 print(predictions)
@@ -144,28 +137,34 @@ print(predictions)
 
 # %%
 
+# Predicting and formatting predictions
 valid_predicted = loaded_model.predict(df_valid)
-valid_predicted = pd.Series(valid_predicted, name='gender_predicted', index=df_valid.index)
+valid_predicted = pd.Series(valid_predicted, name='ofr_predicted', index=df_valid.index)
 valid_table = pd.concat([df_valid[['person', 'ofr_id_short', 'gender']], valid_predicted], axis=1)
-valid_table
 
-# %%
-
-y_pred_test_proba = best_model.predict_proba(df_valid)
+# Getting probability predictions
+y_pred_test_proba = loaded_model.predict_proba(df_valid)
 proba_df = pd.DataFrame(y_pred_test_proba, columns=best_model.classes_, index=df_valid.index)
-proba_df
 
-# %%
-
+# Function to get top 3 recommendations
 def get_recommendations(proba_df):  
-    recommendations = []
-    for index, row in proba_df.iterrows():
-        #print(row)
-        top_3_indices = row.nlargest(3).index.tolist()
-        recommendations.append(top_3_indices)
+    recommendations = proba_df.apply(lambda row: row.nlargest(3).index.tolist(), axis=1)
     return recommendations
 
-recomendations = get_recommendations(proba_df)
-recomendations
+# Generate recommendations and store in a dataframe
+recommendations = get_recommendations(proba_df)
+recommendations_df = pd.concat([valid_table, pd.Series(recommendations, name='recommendations', index=proba_df.index)], axis=1)
+
+# Ensure 'recommendations_df' contains expected values
+print(recommendations_df.head())
+
+# Extract offers that were never seen before
+recommendations_df['never_saw'] = recommendations_df.apply(
+    lambda row: [i for i in row['recommendations'] if i != row['ofr_id_short']], axis=1
+)
+
+# Display the final dataframe
+recommendations_df
+
 
 # %%
