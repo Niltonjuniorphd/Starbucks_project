@@ -240,7 +240,7 @@ def print_metrics(model, X_train, y_train, y_test, y_pred_train, y_pred_test):
     plt.show()
 
 
-def feature_importance(model):   
+def feature_importance(model, w=4, h=9 ):   
 
     feature_importances = model.named_steps['classifier'].feature_importances_
     importance_df = pd.DataFrame({
@@ -249,7 +249,7 @@ def feature_importance(model):
 
     importance_df["Cumulative"] = importance_df["Importance"].cumsum()
 
-    plt.figure(figsize=(4, 9))
+    plt.figure(figsize=(w, h))
     plt.barh(importance_df["Feature"], importance_df["Importance"])
     plt.xlabel("Importance")
     plt.ylabel("Feature")

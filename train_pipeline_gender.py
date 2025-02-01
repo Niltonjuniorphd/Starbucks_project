@@ -18,6 +18,8 @@ df0 = pd.read_csv('person_activity_profile.csv', index_col=0)
 
 df_gender_unknow = df0[df0['gender'].isna()]
 
+df0['ofr_id_short'] = df0['ofr_id_short'].astype('category')
+
 df0 = df0.dropna()
 
 df, df_valid = train_test_split(df0, test_size=0.1, random_state=42, stratify=df0['gender'])
@@ -29,11 +31,11 @@ X = df.drop(columns=['person', 'gender', 'became_member_on', 'bec_memb_year_mont
 y = df['gender']
 
 
-X = X[[
-'tran_amoun_mean',
-'income',
-'age'
-    ]]
+# X = X[[
+# 'tran_amoun_mean',
+# 'income',
+# 'age'
+#     ]]
 
 #%%
 
@@ -65,7 +67,7 @@ y_pred_train = model.predict(X_train)
 
 
 print_metrics(model, X_train, y_train, y_test, y_pred_train, y_pred_test)
-feature_selection = feature_importance(model)
+feature_selection = feature_importance(model, w=9, h=20)
 print(feature_selection)
 
 # y_pred_valid = model.predict(df_valid)

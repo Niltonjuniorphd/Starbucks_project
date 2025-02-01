@@ -18,28 +18,27 @@ df0 = pd.read_csv('person_activity_profile.csv', index_col=0)
 
 df_gender_unknow = df0[df0['gender'].isna()]
 
-df0 = df0.dropna()
+df0 = df0.drop(columns=['person',
+'became_member_on',
+'bec_memb_year_month',
+'channels',
+'duration',
+'reward',
+'reward_offer_completed',
+'difficulty',
+'offer_type']).drop_duplicates().dropna()
 
 df, df_valid = train_test_split(df0, test_size=0.1, random_state=42, stratify=df0['gender'])
 
 # y_valid = df_valid['gender']
 # df_valid = df_valid.drop(columns=['gender'])
 
-X = df.drop(columns=['person',
-'ofr_id_short',
-'became_member_on',
-'bec_memb_year_month',
-'channels',
-'duration',
-'reward',
-'difficulty',
-'offer_type']) #.drop_duplicates().dropna()
-
+X = df.drop(columns=['ofr_id_short'])
 y = df['ofr_id_short']
 
-X = X[[
-'reward_offer_completed', 'curiosity_vr', 'overall_cr'
-    ]]
+# X = X[[
+# 'reward_offer_completed', 'curiosity_vr', 'overall_cr'
+#     ]]
 
 
 #%%
@@ -68,7 +67,7 @@ y_pred_test = model.predict(X_test)
 y_pred_train = model.predict(X_train)
 
 print_metrics(model, X_train, y_train, y_test, y_pred_train, y_pred_test)
-feature_selection = feature_importance(model)
+feature_selection = feature_importance(model, w=4, h=15)
 print(feature_selection)
 
 #%%
@@ -155,9 +154,6 @@ def get_recommendations(proba_df):
 recommendations = get_recommendations(proba_df)
 recommendations_df = pd.concat([valid_table, pd.Series(recommendations, name='recommendations', index=proba_df.index)], axis=1)
 
-# Ensure 'recommendations_df' contains expected values
-print(recommendations_df.head())
-
 # Extract offers that were never seen before
 recommendations_df['never_saw'] = recommendations_df.apply(
     lambda row: [i for i in row['recommendations'] if i != row['ofr_id_short']], axis=1
@@ -165,6 +161,5 @@ recommendations_df['never_saw'] = recommendations_df.apply(
 
 # Display the final dataframe
 recommendations_df
-
 
 # %%
