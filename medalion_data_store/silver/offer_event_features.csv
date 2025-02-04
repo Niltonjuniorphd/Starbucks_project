@@ -1,4 +1,4 @@
-ofr_id_short,cnt_offer_completed,cnt_offer_received,cnt_offer_viewed,mean_time_offer_completed,mean_time_offer_received,mean_time_offer_viewed,max_time_offer_completed,max_time_offer_received,max_time_offer_viewed,min_time_offer_completed,min_time_offer_received,min_time_offer_viewed
+ofr_id_short,cnt_completed,cnt_received,cnt_viewed,mean_time_completed,mean_time_received,mean_time_viewed,max_time_completed,max_time_received,max_time_viewed,min_time_completed,min_time_received,min_time_viewed
 ofr_A,3688.0,7658.0,6716.0,394.8,329.8,352.6,714.0,576.0,714.0,0.0,0.0,0.0
 ofr_B,3331.0,7593.0,7298.0,385.7,335.2,353.1,696.0,576.0,714.0,0.0,0.0,0.0
 ofr_C,0.0,7617.0,4144.0,10000.0,331.9,358.6,10000.0,576.0,714.0,10000.0,0.0,0.0
