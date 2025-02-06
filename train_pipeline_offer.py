@@ -13,36 +13,25 @@ import joblib
 from functions import print_metrics, feature_importance
 
 
-#%%
-# df0 = pd.read_csv('medalion_data_store/gold/person_activity_profile.csv', index_col=0)
-
-# df_gender_unknow = df0[df0['gender'].isna()]
-
-# df0['ofr_id_short'] = df0['ofr_id_short'].astype('category')
-
-# df0 = df0.dropna()
-
-# df, df_valid = train_test_split(df0, test_size=0.1, random_state=42, stratify=df0['gender'])
-
-# X = df.drop(columns=[
-#         'person',
-#         'ofr_id_short',
-#         'became_member_on',
-#         'bec_memb_year_month',
-#         'channels',
-#         'duration',
-#         'reward',
-#         'difficulty',
-#         'offer_type',
-#         'reward', 
-#         'reward_offer_completed',
-#         'tag'
-# ])
-
-# y = df['ofr_id_short']
 
 #%%
-df0 = pd.read_csv('medalion_data_store/silver/unique_event_features.csv', index_col=0)
+df0 = pd.read_csv('medalion_data_store/gold/analytical_time.csv', index_col=0)
+
+plt.figure(figsize=(10,5))
+df0.isna().sum().plot(kind='bar')
+
+df_no_age = df0.loc[df0['avg_time_completed'].isna(),:]
+df_no_view = df0.loc[df0['avg_time_viewed'].isna(),:]
+df_no_income = df0.loc[df0['income'].isna(),:]
+
+df = df0.loc[~df0['avg_time_completed'].isna(),:]
+df = df.loc[~df['avg_time_viewed'].isna(),:]
+df = df.loc[~df['income'].isna(),:]
+
+plt.figure(figsize=(10,5))
+df.isna().sum().plot(kind='bar')
+
+#%%
 
 df0['ofr_id_short'] = df0['ofr_id_short'].astype('category')
 
@@ -54,7 +43,10 @@ X = df.drop(columns=[
         'person',
         'ofr_id_short',
         'tag',
-        'reward_offer_completed'
+        'became_member_on',
+        'bec_memb_year_month',
+        'reward_completed',
+        'tag'
         ])
 
 y = df['ofr_id_short']
@@ -66,8 +58,8 @@ print('-----Training Base Line Model------')
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
 preprocessor = ColumnTransformer([
-    ('select', 'passthrough', X_train.select_dtypes(include=['number']).columns),
-    #('num', StandardScaler(), X_train.select_dtypes(include=['number']).columns),
+    # ('select', 'passthrough', X_train.select_dtypes(include=['number']).columns),
+    ('scaler', StandardScaler(), X_train.select_dtypes(include=['number']).columns),
     ('cat', OneHotEncoder(sparse_output=False, drop='first'), X_train.select_dtypes(include=['object']).columns)
 ])
 
@@ -134,7 +126,7 @@ grid_search.fit(X_train, y_train)
 
 best_model = grid_search.best_estimator_
 
-best_model.fit(X_train, y_train)
+# best_model.fit(X_train, y_train)
 
 # predicting
 y_pred_test = best_model.predict(X_test)

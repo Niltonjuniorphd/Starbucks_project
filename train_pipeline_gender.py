@@ -14,7 +14,7 @@ from functions import print_metrics, feature_importance
 
 
 #%%
-df0 = pd.read_csv('medalion_data_store/gold/person_activity_profile.csv', index_col=0)
+df0 = pd.read_csv('medalion_data_store/gold/analytical_user_item.csv')
 
 df0['ofr_id_short'] = df0['ofr_id_short'].astype('category')
 
@@ -28,7 +28,7 @@ X = df.drop(columns=['person',
                     'gender',
                     'became_member_on',
                     'bec_memb_year_month',
-                    'channels'])
+                    ])
 y = df['gender']
 
 
@@ -70,13 +70,11 @@ print(feature_selection)
 
 print('-----Tunning Model------')
 
-# select the 5 first features from the feature importance list
+# select features from the feature importance list
 X = X[[
-        'tran_amoun_mean',
-        'income',
-        'age',
+        'tran_amoun_min',
         'avg_time_transaction',
-        'tran_amoun_min'        
+        'avg_time_viewed'       
 ]]
 
 # set the train-test split
@@ -114,7 +112,7 @@ grid_search.fit(X_train, y_train)
 
 best_model = grid_search.best_estimator_
 
-best_model.fit(X_train, y_train)
+#best_model.fit(X_train, y_train)
 
 # predicting
 y_pred_test = best_model.predict(X_test)
