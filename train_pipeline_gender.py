@@ -14,7 +14,7 @@ from functions import print_metrics, feature_importance
 
 
 #%%
-df0 = pd.read_csv('medalion_data_store/gold/analytical_user_item.csv')
+df0 = pd.read_csv('medalion_data_store/gold/analytical_table.csv')
 
 df0['ofr_id_short'] = df0['ofr_id_short'].astype('category')
 
@@ -24,7 +24,7 @@ df0 = df0.dropna()
 
 df, df_valid = train_test_split(df0, test_size=0.1, random_state=42, stratify=df0['gender'])
 
-X = df.drop(columns=['person',
+X = df.drop(columns=['id',
                     'gender',
                     'became_member_on',
                     'bec_memb_year_month',
@@ -34,14 +34,14 @@ y = df['gender']
 
 #%%
 
-print('-----Training Model------')
+print('-----Training Model Baseline Model------')
 
 # defining the model pipeline
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
 preprocessor = ColumnTransformer([
     ('select', 'passthrough', X_train.select_dtypes(include=['number']).columns),
-    #('num', StandardScaler(), X_train.select_dtypes(include=['number']).columns),
+    #('scl', StandardScaler(), X_train.select_dtypes(include=['number']).columns),
     ('cat', OneHotEncoder(sparse_output=False, drop=None), X_train.select_dtypes(include=['object']).columns)
 ])
 
@@ -72,9 +72,10 @@ print('-----Tunning Model------')
 
 # select features from the feature importance list
 X = X[[
-        'tran_amoun_min',
-        'avg_time_transaction',
-        'avg_time_viewed'       
+        'median_am_tran',
+        'us_ev_mean_t_viewed',
+        'age',
+        'us_ev_dif_t_std_viewed'    
 ]]
 
 # set the train-test split
@@ -84,8 +85,8 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 param_grid_dt = {
     'classifier__criterion': ['gini', 'entropy'],  # Prefix with 'classifier__'
     'classifier__max_depth': [None, 50, 100],
-    # 'classifier__min_samples_split': [2],
-    # 'classifier__min_samples_leaf': [1],
+    'classifier__min_samples_split': [2, 5],
+    'classifier__min_samples_leaf': [1, 3],
     'classifier__max_features': [None, 'sqrt', 'log2'],
     'classifier__class_weight': ['balanced', None],
     'classifier__splitter': ['best', 'random'],
@@ -93,8 +94,8 @@ param_grid_dt = {
 }
 
 preprocessor_grid = ColumnTransformer([
-    ('select', 'passthrough', X_train.select_dtypes(include=['number']).columns),
-    #('num', StandardScaler(), X_train.select_dtypes(include=['number']).columns),
+    ('sel', 'passthrough', X_train.select_dtypes(include=['number']).columns),
+    #('scl', StandardScaler(), X_train.select_dtypes(include=['number']).columns),
     ('cat', OneHotEncoder(sparse_output=False, drop=None), X_train.select_dtypes(include=['object']).columns)
 ])
 
@@ -105,14 +106,12 @@ pipeline_grid = Pipeline([
 
 model_grid = pipeline_grid
 
-grid_search = GridSearchCV(model_grid, param_grid_dt, cv=5, scoring='f1_macro', n_jobs=-1, verbose=1)
+grid_search = GridSearchCV(model_grid, param_grid_dt, cv=5, scoring='f1', n_jobs=-1, verbose=1)
 
 # fitting the grid search
 grid_search.fit(X_train, y_train)
 
 best_model = grid_search.best_estimator_
-
-#best_model.fit(X_train, y_train)
 
 # predicting
 y_pred_test = best_model.predict(X_test)
@@ -141,7 +140,7 @@ predictions
 # predict the valid (never seen) data
 valid_predicted = loaded_model.predict(df_valid)
 valid_predicted = pd.Series(valid_predicted, name='gender_predicted', index=df_valid.index)
-valid_table = pd.concat([df_valid[['person', 'ofr_id_short', 'gender']], valid_predicted], axis=1)
+valid_table = pd.concat([df_valid[['id', 'ofr_id_short', 'gender']], valid_predicted], axis=1)
 
 
 # predicting probabilities

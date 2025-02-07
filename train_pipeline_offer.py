@@ -15,52 +15,32 @@ from functions import print_metrics, feature_importance
 
 
 #%%
-df0 = pd.read_csv('medalion_data_store/gold/analytical_time.csv', index_col=0)
+dfa = pd.read_csv('medalion_data_store/gold/analytical_table.csv')
+dfb = pd.read_csv('medalion_data_store/silver/sorted_offers.csv')
 
-plt.figure(figsize=(10,5))
-df0.isna().sum().plot(kind='bar')
+df0 = dfb.dropna()
 
-df_no_age = df0.loc[df0['avg_time_completed'].isna(),:]
-df_no_view = df0.loc[df0['avg_time_viewed'].isna(),:]
-df_no_income = df0.loc[df0['income'].isna(),:]
-
-df = df0.loc[~df0['avg_time_completed'].isna(),:]
-df = df.loc[~df['avg_time_viewed'].isna(),:]
-df = df.loc[~df['income'].isna(),:]
-
-plt.figure(figsize=(10,5))
-df.isna().sum().plot(kind='bar')
-
-#%%
-
-df0['ofr_id_short'] = df0['ofr_id_short'].astype('category')
-
-df0 = df0.dropna()
-
-df, df_valid = train_test_split(df0, test_size=0.1, random_state=42, stratify=df0['ofr_id_short'])
+df, df_valid = train_test_split(df0, test_size=0.1, random_state=42, stratify=df0['first_completed'])
 
 X = df.drop(columns=[
-        'person',
-        'ofr_id_short',
-        'tag',
-        'became_member_on',
-        'bec_memb_year_month',
-        'reward_completed',
-        'tag'
-        ])
+                    'person',
+                    'first_completed',
+                    #  'became_member_on',
+                    #  'bec_memb_year_month'
+                     ])
+X = pd.get_dummies(X.iloc[:,1:]).astype(int)
 
-y = df['ofr_id_short']
+y = df['first_completed']
 
 #%%
-print('-----Training Base Line Model------')
-
+print('-----Training Baseline Model------')
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
 preprocessor = ColumnTransformer([
     # ('select', 'passthrough', X_train.select_dtypes(include=['number']).columns),
     ('scaler', StandardScaler(), X_train.select_dtypes(include=['number']).columns),
-    ('cat', OneHotEncoder(sparse_output=False, drop='first'), X_train.select_dtypes(include=['object']).columns)
+    ('cat', OneHotEncoder(sparse_output=False), X_train.select_dtypes(include=['object']).columns)
 ])
 
 pipeline = Pipeline([
@@ -69,30 +49,38 @@ pipeline = Pipeline([
 ])
 
 
-model = pipeline
+# model = pipeline
 
-model.fit(X_train, y_train)
+pipeline.fit(X_train, y_train)
 
-y_pred_test = model.predict(X_test)
-y_pred_train = model.predict(X_train)
+y_pred_test = pipeline.predict(X_test)
+y_pred_train = pipeline.predict(X_train)
 
-print_metrics(model, X_train, y_train, y_test, y_pred_train, y_pred_test)
-feature_selection = feature_importance(model, w=4, h=15)
+print_metrics(pipeline, X_train, y_train, y_test, y_pred_train, y_pred_test)
+feature_selection = feature_importance(pipeline, w=4, h=15)
 print(feature_selection)
 
 #%%
+
+X = X[[
+    'curiosity_vr',
+    'overall_cr',
+    'eagerness_cv',
+    'min_am_tran',
+    'median_am_tran'
+]]
+
 
 print('-----Tunning Model------')
 
 param_grid_dt = {
     'classifier__criterion': ['gini', 'entropy'], 
     'classifier__max_depth': [None, 50, 100],
-    'classifier__min_samples_split': [2, 4],
-    # 'classifier__min_samples_leaf': [1],
-    'classifier__max_features': [None, 'sqrt', 'log2'],
+    #'classifier__min_samples_split': [2, 4],
+    #'classifier__min_samples_leaf': [1, 3],
+    'classifier__max_features': ['sqrt', 'log2'],
     'classifier__class_weight': ['balanced', None],
-    'classifier__splitter': ['best', 'random'],
-    # 'classifier__min_impurity_decrease': [0.0, 0.01]
+    'classifier__min_impurity_decrease': [0.001, 0.01]
 }
 param_grid_rf = {
     'classifier__n_estimators': [100, 300],  # Number of trees in the forest
@@ -109,7 +97,7 @@ param_grid_rf = {
 preprocessor_grid = ColumnTransformer([
     ('select', 'passthrough', X_train.select_dtypes(include=['number']).columns),
     #('num', StandardScaler(), X_train.select_dtypes(include=['number']).columns),
-    ('cat', OneHotEncoder(sparse_output=False, drop=None), X_train.select_dtypes(include=['object']).columns)
+    ('cat', OneHotEncoder(sparse_output=False), X_train.select_dtypes(include=['object']).columns)
 ])
 
 pipeline_grid = Pipeline([
@@ -117,16 +105,14 @@ pipeline_grid = Pipeline([
     ('classifier', DecisionTreeClassifier(random_state=42))
 ])
 
-model_grid = pipeline_grid
+# model_grid = pipeline_grid
 
-grid_search = GridSearchCV(model_grid, param_grid_dt, cv=5, scoring='f1_macro', n_jobs=-1, verbose=1)
+grid_search = GridSearchCV(pipeline_grid, param_grid_dt, cv=5, scoring='f1_macro', n_jobs=-1, verbose=1)
 
 # fitting the grid search
 grid_search.fit(X_train, y_train)
 
 best_model = grid_search.best_estimator_
-
-# best_model.fit(X_train, y_train)
 
 # predicting
 y_pred_test = best_model.predict(X_test)
@@ -142,10 +128,10 @@ pd.DataFrame(grid_search.best_params_.values(), index=[*grid_search.best_params_
 #%%
 
 # Save the best model
-joblib.dump(grid_search.best_estimator_, f'saved_models/best_model_offer_{model.named_steps['classifier'].__class__.__name__}.pkl')
+joblib.dump(grid_search.best_estimator_, f'saved_models/best_model_offer_{best_model.named_steps['classifier'].__class__.__name__}.pkl')
 
 # Load the saved model
-loaded_model = joblib.load(f'saved_models/best_model_offer_{model.named_steps['classifier'].__class__.__name__}.pkl')
+loaded_model = joblib.load(f'saved_models/best_model_offer_{best_model.named_steps['classifier'].__class__.__name__}.pkl')
 
 # Use the model for prediction 
 predictions = loaded_model.predict(X_test)
@@ -158,7 +144,7 @@ print(predictions)
 # Predicting and formatting predictions
 valid_predicted = loaded_model.predict(df_valid)
 valid_predicted = pd.Series(valid_predicted, name='ofr_predicted', index=df_valid.index)
-valid_table = pd.concat([df_valid[['person', 'ofr_id_short']], valid_predicted], axis=1)
+valid_table = pd.concat([df_valid[['id', 'ofr_id_short']], valid_predicted], axis=1)
 
 # Getting probability predictions
 y_pred_test_proba = loaded_model.predict_proba(df_valid)
@@ -175,7 +161,7 @@ recommendations_df = pd.concat([valid_table, pd.Series(recommendations, name='re
 
 # Extract offers that were never seen before
 recommendations_df['never_saw'] = recommendations_df.apply(
-    lambda row: [i for i in row['recommendations'] if i != row['ofr_id_short']], axis=1
+    lambda row: [i for i in row['recommendations'] if i != row['ofr_predicted']], axis=1
 )
 
 # Display the final dataframe
