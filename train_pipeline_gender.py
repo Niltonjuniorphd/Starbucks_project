@@ -34,13 +34,13 @@ y = df['gender']
 
 #%%
 
-print('-----Training Model Baseline Model------')
+print('-----Training Baseline Model------')
 
 # defining the model pipeline
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
 preprocessor = ColumnTransformer([
-    ('select', 'passthrough', X_train.select_dtypes(include=['number']).columns),
+    ('sel', 'passthrough', X_train.select_dtypes(include=['number']).columns),
     #('scl', StandardScaler(), X_train.select_dtypes(include=['number']).columns),
     ('cat', OneHotEncoder(sparse_output=False, drop=None), X_train.select_dtypes(include=['object']).columns)
 ])
@@ -50,18 +50,18 @@ pipeline = Pipeline([
     ('classifier', DecisionTreeClassifier(random_state=42))
 ])
 
-model = pipeline
 
 # fitting the model
-model.fit(X_train, y_train)
+pipeline.fit(X_train, y_train)
 
 # predicting
-y_pred_test = model.predict(X_test)
-y_pred_train = model.predict(X_train)
+y_pred_test = pipeline.predict(X_test)
+y_pred_train = pipeline.predict(X_train)
 
 # printing metrics
-print_metrics(model, X_train, y_train, y_test, y_pred_train, y_pred_test)
-feature_selection = feature_importance(model, w=9, h=20)
+print_metrics(pipeline, X_train, y_train, y_test, y_pred_train, y_pred_test)
+feature_selection = feature_importance(pipeline, percent=0.7,w=9, h=20)
+
 print(feature_selection)
 
 
@@ -71,12 +71,7 @@ print(feature_selection)
 print('-----Tunning Model------')
 
 # select features from the feature importance list
-X = X[[
-        'median_am_tran',
-        'us_ev_mean_t_viewed',
-        'age',
-        'us_ev_dif_t_std_viewed'    
-]]
+X = X.loc[:, feature_selection]
 
 # set the train-test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
@@ -85,12 +80,12 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 param_grid_dt = {
     'classifier__criterion': ['gini', 'entropy'],  # Prefix with 'classifier__'
     'classifier__max_depth': [None, 50, 100],
-    'classifier__min_samples_split': [2, 5],
-    'classifier__min_samples_leaf': [1, 3],
-    'classifier__max_features': [None, 'sqrt', 'log2'],
+    'classifier__min_samples_split': [2],
+    'classifier__min_samples_leaf': [1],
+    'classifier__max_features': ['sqrt', 'log2'],
     'classifier__class_weight': ['balanced', None],
     'classifier__splitter': ['best', 'random'],
-    'classifier__min_impurity_decrease': [0.0, 0.01]
+    'classifier__min_impurity_decrease': [0.0001, 0.001]
 }
 
 preprocessor_grid = ColumnTransformer([
@@ -106,7 +101,7 @@ pipeline_grid = Pipeline([
 
 model_grid = pipeline_grid
 
-grid_search = GridSearchCV(model_grid, param_grid_dt, cv=5, scoring='f1', n_jobs=-1, verbose=1)
+grid_search = GridSearchCV(model_grid, param_grid_dt, cv=5, scoring='f1_macro', n_jobs=-1, verbose=1)
 
 # fitting the grid search
 grid_search.fit(X_train, y_train)
@@ -126,10 +121,10 @@ pd.DataFrame(grid_search.best_params_.values(), index=[*grid_search.best_params_
 
 #%%
 # Save the best model
-joblib.dump(grid_search.best_estimator_, f'saved_models/best_model_gender_{model.named_steps['classifier'].__class__.__name__}.pkl')
+joblib.dump(grid_search.best_estimator_, f'saved_models/best_model_gender_{pipeline.named_steps['classifier'].__class__.__name__}.pkl')
 
 # Load the saved model
-loaded_model = joblib.load(f'saved_models/best_model_gender_{model.named_steps['classifier'].__class__.__name__}.pkl')
+loaded_model = joblib.load(f'saved_models/best_model_gender_{pipeline.named_steps['classifier'].__class__.__name__}.pkl')
 
 # Check the model loaded for prediction on test data
 predictions = loaded_model.predict(X_test)

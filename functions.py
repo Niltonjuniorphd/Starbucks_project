@@ -217,12 +217,9 @@ def ks_test(df1, df2, sig=0.05):
 
 def print_metrics(model, X_train, y_train, y_test, y_pred_train, y_pred_test):
 
-    print('-----Training Model------')
-
-    print('\nBaseline Metrics\n')
-    print('Train\n')
+    print('Train Metrics\n')
     print(classification_report(y_train, y_pred_train, target_names=model.named_steps['classifier'].classes_, zero_division=1))
-    print('Test\n')
+    print('Test Metrics\n')
     print(classification_report(y_test, y_pred_test, target_names=model.named_steps['classifier'].classes_, zero_division=1))
 
     print('Confusion Matrix Train\n')
@@ -240,11 +237,11 @@ def print_metrics(model, X_train, y_train, y_test, y_pred_train, y_pred_test):
     plt.show()
 
 
-def feature_importance(model, w=4, h=9 ):   
+def feature_importance(model, percent=0.8, w=4, h=9 ):   
 
     feature_importances = model.named_steps['classifier'].feature_importances_
     importance_df = pd.DataFrame({
-    "Feature": model.named_steps['preprocessor'].get_feature_names_out(),
+    "Feature": [x[5:] for x in model[:-1].get_feature_names_out()],
     "Importance": feature_importances}).sort_values(by="Importance", ascending=True).reset_index(drop=True)
 
     importance_df["Cumulative"] = importance_df["Importance"].cumsum()
@@ -258,6 +255,7 @@ def feature_importance(model, w=4, h=9 ):
 
     print(importance_df['Feature'].tolist()[::-1])
 
-    feature_selection = importance_df['Feature'].loc[(importance_df['Cumulative'] >=0.8)][::-1].tolist()
+    feature_selection = importance_df['Feature'].loc[(importance_df['Cumulative'] >=percent)][::-1].tolist()
 
     return feature_selection
+
