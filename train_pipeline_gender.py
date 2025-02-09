@@ -145,7 +145,7 @@ proba_df = pd.DataFrame(y_pred_test_proba, columns=best_model.classes_, index=df
 
 print('---END OF MODEL---')
 
-print(valid_table)
-print(proba_df)
+display(valid_table)
+display(proba_df)
 
 # %%

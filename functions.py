@@ -241,7 +241,7 @@ def feature_importance(model, percent=0.8, w=4, h=9 ):
 
     feature_importances = model.named_steps['classifier'].feature_importances_
     importance_df = pd.DataFrame({
-    "Feature": [x[5:] for x in model[:-1].get_feature_names_out()],
+    "Feature": [x[5:] for x in model.named_steps['preprocessor'].get_feature_names_out()],
     "Importance": feature_importances}).sort_values(by="Importance", ascending=True).reset_index(drop=True)
 
     importance_df["Cumulative"] = importance_df["Importance"].cumsum()

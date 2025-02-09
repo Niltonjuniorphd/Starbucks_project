@@ -15,16 +15,17 @@ from functions import print_metrics, feature_importance
 
 
 #%%
-dfa = pd.read_csv('medalion_data_store/silver/user_ofr_event_time.csv')
+dfa = pd.read_csv('medalion_data_store/silver/user_item_event.csv')
 dfb = pd.read_csv('medalion_data_store/bronze/profile.csv')
+dfc = pd.read_csv('medalion_data_store/silver/sorted_offers.csv')
 
-#%%
 df0 = dfa.merge(dfb, left_on=['person'], right_on=['id'], how='left').drop(columns=['id'])
 
+df0 = df0.merge(dfc, on=['person'], how='left')
 
 #%%
 
-# df0 = pd.read_csv('medalion_data_store/silver/user_ofr_event_time.csv')
+# df0 = pd.read_csv('medalion_data_store/gold/analytical_table.csv')
 
 # df_gender_unknow = df0[df0['gender'].isna()]
 
@@ -36,6 +37,9 @@ X = df.drop(columns=['person',
                     'ofr_id_short',
                     'became_member_on',
                     'bec_memb_year_month',
+                    'ofr_id_short_completed',
+                    'ofr_id_short_received',
+                    'ofr_id_short_viewed'
                     ])
 
 y = df['ofr_id_short']
@@ -53,7 +57,7 @@ preprocessor = ColumnTransformer([
 
 pipeline = Pipeline([
     ('preprocessor', preprocessor),
-    ('classifier', RandomForestClassifier(random_state=42))
+    ('classifier', DecisionTreeClassifier(random_state=42))
 ])
 
 
@@ -77,13 +81,13 @@ print('-----Tunning Model------')
 
 param_grid_dt = {
     'classifier__criterion': ['gini', 'entropy'],  # Prefix with 'classifier__'
-    'classifier__max_depth': [None, 20, 100],
+    'classifier__max_depth': [20, 100, 300],
     'classifier__min_samples_split': [2, 3],
     'classifier__min_samples_leaf': [1, 3],
     'classifier__max_features': ['sqrt', 'log2'],
     'classifier__class_weight': ['balanced', None],
     'classifier__splitter': ['best', 'random'],
-    'classifier__min_impurity_decrease': [0.0001]
+    'classifier__min_impurity_decrease': [0, 0.0001]
 }
 param_grid_rf = {
     'classifier__n_estimators': [50, 300],  # Number of trees in the forest
@@ -105,12 +109,12 @@ preprocessor_grid = ColumnTransformer([
 
 pipeline_grid = Pipeline([
     ('preprocessor', preprocessor_grid),
-    ('classifier', RandomForestClassifier(random_state=42))
+    ('classifier', DecisionTreeClassifier(random_state=42))
 ])
 
 # model_grid = pipeline_grid
 
-grid_search = GridSearchCV(pipeline_grid, param_grid_rf, cv=5, scoring='f1_macro', n_jobs=-1, verbose=1)
+grid_search = GridSearchCV(pipeline_grid, param_grid_dt, cv=5, scoring='f1_macro', n_jobs=-1, verbose=1)
 
 # fitting the grid search
 grid_search.fit(X_train, y_train)
