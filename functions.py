@@ -215,8 +215,9 @@ def ks_test(df1, df2, sig=0.05):
     
     return statistic, p_value
 
-def print_metrics(model, X_train, y_train, y_test, y_pred_train, y_pred_test):
+def print_metrics(model, y_train, y_test, y_pred_train, y_pred_test):
 
+    
     print('Train Metrics\n')
     print(classification_report(y_train, y_pred_train, target_names=model.named_steps['classifier'].classes_, zero_division=1))
     print('Test Metrics\n')

@@ -14,21 +14,23 @@ from functions import print_metrics, feature_importance
 
 
 #%%
-df0 = pd.read_csv('medalion_data_store/gold/analytical_table.csv')
-
-df0['ofr_id_short'] = df0['ofr_id_short'].astype('category')
+df0 = pd.read_csv('medalion_data_store/gold/user_event_transactions.csv')
 
 df_gender_unknow = df0[df0['gender'].isna()]
 
-df0 = df0.dropna()
 
 df, df_valid = train_test_split(df0, test_size=0.1, random_state=42, stratify=df0['gender'])
 
-X = df.drop(columns=['id',
+df_valid = df_valid.dropna()
+
+df = df0.dropna() # drop never event completed ones
+
+
+X = df.drop(columns=[
+                    # 'id',
+                    'person',
                     'gender',
-                    'became_member_on',
-                    'bec_memb_year_month',
-                    ])
+])
 y = df['gender']
 
 
@@ -37,7 +39,7 @@ y = df['gender']
 print('-----Training Baseline Model------')
 
 # defining the model pipeline
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 preprocessor = ColumnTransformer([
     ('sel', 'passthrough', X_train.select_dtypes(include=['number']).columns),
@@ -59,7 +61,7 @@ y_pred_test = pipeline.predict(X_test)
 y_pred_train = pipeline.predict(X_train)
 
 # printing metrics
-print_metrics(pipeline, X_train, y_train, y_test, y_pred_train, y_pred_test)
+print_metrics(pipeline, y_train, y_test, y_pred_train, y_pred_test)
 feature_selection = feature_importance(pipeline, percent=0.7,w=9, h=20)
 
 print(feature_selection)
@@ -74,18 +76,18 @@ print('-----Tunning Model------')
 X = X.loc[:, feature_selection]
 
 # set the train-test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # defining the model parameters
 param_grid_dt = {
     'classifier__criterion': ['gini', 'entropy'],  # Prefix with 'classifier__'
-    'classifier__max_depth': [None, 50, 100],
-    'classifier__min_samples_split': [2],
-    'classifier__min_samples_leaf': [1],
+    'classifier__max_depth': [20, 50, 100],
+    'classifier__min_samples_split': [2, 3],
+    'classifier__min_samples_leaf': [1, 2],
     'classifier__max_features': ['sqrt', 'log2'],
-    'classifier__class_weight': ['balanced', None],
+    'classifier__class_weight': ['balanced'],
     'classifier__splitter': ['best', 'random'],
-    'classifier__min_impurity_decrease': [0.0001, 0.001]
+    'classifier__min_impurity_decrease': [0, 0.001]
 }
 
 preprocessor_grid = ColumnTransformer([
@@ -113,7 +115,7 @@ y_pred_test = best_model.predict(X_test)
 y_pred_train = best_model.predict(X_train)
 
 # printing metrics
-print_metrics(best_model, X_train, y_train, y_test, y_pred_train, y_pred_test)
+print_metrics(best_model, y_train, y_test, y_pred_train, y_pred_test)
 
 # see the best parameters
 pd.DataFrame(grid_search.best_params_.values(), index=[*grid_search.best_params_])
@@ -135,7 +137,7 @@ predictions
 # predict the valid (never seen) data
 valid_predicted = loaded_model.predict(df_valid)
 valid_predicted = pd.Series(valid_predicted, name='gender_predicted', index=df_valid.index)
-valid_table = pd.concat([df_valid[['id', 'ofr_id_short', 'gender']], valid_predicted], axis=1)
+valid_table = pd.concat([df_valid[['person', 'ofr_id_short', 'gender']], valid_predicted], axis=1)
 
 
 # predicting probabilities
