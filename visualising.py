@@ -3,7 +3,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-from functions import ks_test
+from models_pipelines.functions import ks_test
 
 
 #%%

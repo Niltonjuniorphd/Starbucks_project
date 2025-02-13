@@ -14,8 +14,8 @@ from functions import print_metrics, feature_importance
 
 
 #%%
-dfa = pd.read_csv('medalion_data_store/silver/transactions_time.csv')
-dfb = pd.read_csv('medalion_data_store/bronze/profile.csv')
+dfa = pd.read_csv('../medalion_data_store/silver/transactions_time.csv')
+dfb = pd.read_csv('../medalion_data_store/bronze/profile.csv')
 
 df0 = dfa.merge(dfb, left_on=['person'], right_on=['id'], how='left')
 
@@ -126,7 +126,7 @@ pd.DataFrame(grid_search.best_params_.values(), index=[*grid_search.best_params_
 
 #%%
 # Save the best model
-joblib.dump(grid_search.best_estimator_, f'saved_models/best_model_gender_{model.named_steps['classifier'].__class__.__name__}.pkl')
+joblib.dump(grid_search.best_estimator_, f'../saved_models/best_model_gender_{model.named_steps['classifier'].__class__.__name__}.pkl')
 
 # Load the saved model
 loaded_model = joblib.load(f'saved_models/best_model_gender_{model.named_steps['classifier'].__class__.__name__}.pkl')
