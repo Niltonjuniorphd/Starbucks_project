@@ -75,7 +75,7 @@ param_grid = {
     'classifier__max_features': ['sqrt', 'log2'],
     'classifier__class_weight': ['balanced'],
     'classifier__splitter': ['best', 'random'],
-    'classifier__min_impurity_decrease': [0.00001, 0.0001]
+    'classifier__min_impurity_decrease': [0.00001, 0.001]
 }
 
 
